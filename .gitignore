@@ -1,0 +1,7 @@
+db/
+deps/
+ebin/
+!ebin/*.app
+.erlang.mk/
+_rel/
+*.dump
