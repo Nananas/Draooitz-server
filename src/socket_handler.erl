@@ -7,28 +7,86 @@
 -export([websocket_info/3]).
 -export([websocket_terminate/3]).
 
--record(state, {
-	player_id
-}).
+-include ("records.hrl").
 
 init(_, _, _) ->
-	io:format("INIT~n"),
+	io:format("-------------- INIT~n"),
 	{upgrade, protocol, cowboy_websocket}.
 
 websocket_init(_, Req, _Opts) ->
 	Req2 = cowboy_req:compact(Req),
-	io:format("WS INIT~n"),
-	{ok, Req2, #state{}}.
+	io:format("> WS INIT~n"),
+	{ok, Req2, not_logged_in}.
 
-websocket_handle({text, Data}, Req, State) ->
-	io:format("TEXT~n"),
-	io:format("STATE: ~p ~n", [State]),
+
+
+% State -> Player pid if logged in
+websocket_handle({text, Data}, Req, not_logged_in) ->
 	case Data of
-		<<"LOGIN:",D/bitstring>>->
-			handle_login(D, Req, State);
+
+		<<"LOGIN:", D/bitstring>> ->
+			io:format("LOGIN~n"),
+			Result = login:handle_login(D),
+			case Result of
+				{ok, Player} ->
+					io:format("ok~n"),
+					Pid = players:start_player(Player#player.name, self()),
+					{reply, {text, tojson(#{state => <<"LOGGED_IN">>})}, Req, Pid};
+
+				not_ok ->
+					io:format("not_ok~n"),
+					{reply, {text, tojson(#{state => <<"NOT_LOGGED_IN">>})}, Req, not_logged_in}
+			end;
 
 		_->
-			{reply, {text, Data}, Req, State}
+			{reply, {text, tojson(#{state => <<"NOT_LOGGED_IN">>})}, Req, not_logged_in}
+	end;
+
+	
+websocket_handle({text, Data}, Req, PlayerPid) when is_pid(PlayerPid) ->
+	case Data of
+		<<"CREATE:", N/bitstring>> ->
+			Msg = case rooms:handle_create(N) of
+				not_ok ->
+					not_ok;
+				{ok, R} ->
+					player:join_room(PlayerPid, R),
+					ok
+			end,
+
+			{reply, {text, tojson(Msg)}, Req, PlayerPid};
+
+		<<"GETROOMLIST:", D/bitstring>> ->
+			R = rooms:handle_getlist(D),
+			io:format("GETROOMLIST: ~p ~n",  [R]),
+			{reply, {text, tojson(R)}, Req, PlayerPid};
+
+		<<"NEWROOM:", N/bitstring>> ->
+			case rooms:handle_create(N) of
+				{ok, Room} ->
+					PlayerPid ! {join_room, Room},
+					players:notify(newroom, Room, PlayerPid),
+					{reply, {text, tojson(ok)}, Req, PlayerPid};
+				not_ok ->
+					{reply, {text, tojson(not_ok)}, Req, PlayerPid}
+			end;
+
+		<<"ENTERROOM:", N/bitstring>> ->
+			case rooms:handle_enter(N) of
+				{ok, Room} ->
+					PlayerPid ! {join_room, Room},
+					{reply, {text, tojson(ok)}, Req, PlayerPid};
+				not_ok ->
+					{reply, {text, tojson(not_ok)}, Req, PlayerPid}
+			end;
+
+		<<"LEAVEROOM">>	->
+			PlayerPid ! {leave_room},
+			{reply, {text, tojson(ok)}, Req, PlayerPid};
+
+		_->
+			{reply, {text, Data}, Req, PlayerPid}
+
 	end;
 
 websocket_handle({binary, Data}, Req, State) ->
@@ -38,39 +96,25 @@ websocket_handle(_Frame, Req, State) ->
 	io:format("OTHER~n"),
 	{ok, Req, State}.
 
+websocket_info({push_update_room, Room}, Req, State) ->
+	io:format("SENDING INFO TO PLAYER: ~p~n", [Room]),
+	Name = Room#room.name,
+	Msg = Name,
+	{reply, {text, Msg}, Req, State};
 websocket_info(_Info, Req, State) ->
 	io:format("INFO~n"),
 	{ok, Req, State}.
 
-websocket_terminate(_Reason, _Req, _State) ->
-	io:format("TERMINATE~n"),
-	ok.
-
-
-
-handle_login(D, Req, State) ->
-	{Comma_pos, _} = binary:match(D, [<<",">>]),
-	F = binary:part(D, {0, Comma_pos}),
-	S = binary:part(D, {Comma_pos+1, byte_size(D) - (Comma_pos+1)}),
-
-	login_handler ! {login, F, S, self()},
-
-	receive
-		ok -> 
-			Score = login:get_score_of_user(F),
-			Out = convert_to_json("LOGGED_IN", Score),
-			{reply, {text, Out}, Req, #state{player_id=F}};
-		pass_not_ok ->
-			{reply, {text, convert_to_json("WRONG_PASS")}, Req, State};
-		created_user -> 
-			Score = login:get_score_of_user(F),
-			{reply, {text, convert_to_json("REGISTERED_LOGGED_IN", Score)}, Req, #state{player_id=F}};
+websocket_terminate(_Reason, _Req, State) ->
+	io:format("TERMINATE -----------------~n"),
+	io:format("State was: ~p~n", [State]),
+	case State of
+		Pid when is_pid(Pid) ->
+			Pid ! destroy;
 		_ ->
-			{reply, {text, convert_to_json("OTHER_ERROR")}, Req, State}
-	end;
+			ok
+	end.
 
-convert_to_json(State) ->
-	"{ \"state\":\"" ++ State ++ "\"}".
-convert_to_json(State, Score) ->
-	io:format("Score~p~n", [Score]),
-	"{ \"state\":\"" ++ State ++ "\", \"s\":" ++ integer_to_list(Score) ++ "}".
+
+tojson(D) ->
+	jiffy:encode(D).

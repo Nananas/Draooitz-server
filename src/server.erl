@@ -13,7 +13,7 @@ start()->
 init() ->
 	io:format("INIT~n"),
 	server_sup:start_child(login, start_survivor, []), 
-	server_sup:start_child(login, init_handler, []), 
+	% server_sup:start_child(login, init_handler, []), 
 	ok.
 
 

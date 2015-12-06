@@ -1,4 +1,4 @@
 PROJECT = server
 
-DEPS = cowboy
+DEPS = cowboy jiffy
 include erlang.mk
