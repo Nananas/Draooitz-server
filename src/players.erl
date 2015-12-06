@@ -61,7 +61,7 @@ set_player_online(Pid) ->
 	ets:insert(t_players_online, {Pid}).
 
 set_player_offline(Pid) ->
-	ets:delete(t_players_online, {Pid}).
+	ets:delete(t_players_online, Pid).
 		
 
 
