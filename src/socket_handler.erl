@@ -84,6 +84,11 @@ websocket_handle({text, Data}, Req, PlayerPid) when is_pid(PlayerPid) ->
 			PlayerPid ! {leave_room},
 			{reply, {text, tojson(ok)}, Req, PlayerPid};
 
+		%% TODO: parse to json
+		<<"DRAWPATH:", D/bitstring>> ->
+			PlayerPid ! {notify_drawn_path, D},
+			{reply, {text, tojson(ok)}, Req, PlayerPid};
+
 		_->
 			{reply, {text, Data}, Req, PlayerPid}
 
@@ -99,15 +104,19 @@ websocket_handle(_Frame, Req, State) ->
 websocket_info({push_update_room, Room}, Req, State) ->
 	io:format("SENDING INFO TO PLAYER: ~p~n", [Room]),
 	Name = Room#room.name,
-	Msg = Name,
-	{reply, {text, Msg}, Req, State};
+	Msg = #{msg=><<"new_room">>, name=>Name},
+	{reply, {text, tojson(Msg)}, Req, State};
+websocket_info({push_drawn_path, Data}, Req, State) ->
+	io:format("SENDING INFO TO PLAYER: ~p~n", [Data]),
+	Msg = #{msg=><<"path">>, path=>Data},
+	{reply, {text, tojson(Msg)}, Req, State};
 websocket_info(_Info, Req, State) ->
 	io:format("INFO~n"),
 	{ok, Req, State}.
 
 websocket_terminate(_Reason, _Req, State) ->
 	io:format("TERMINATE -----------------~n"),
-	io:format("State was: ~p~n", [State]),
+	% io:format("State was: ~p~n", [State]),
 	case State of
 		Pid when is_pid(Pid) ->
 			Pid ! destroy;

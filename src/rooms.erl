@@ -65,14 +65,15 @@ handle_getlist(Data) ->
 	case Data of
 		<<"ALL">> ->
 			All = ets:match(t_rooms, #room{name='$1', _='_'}),
-			io:format("ALL: match: ~p~n", [All]),
+			% io:format("ALL: match: ~p~n", [All]),
 			All_t = lists:map(fun (A)  ->
 				% [{Name, _, _}] = A,
 				% #room{name=Name},
 				% Name = A#room.name,
-				#{name=>A}		%% map = easier to convert to json
+				[Name] = A,
+				#{name=>Name}		%% map = easier to convert to json
 			end, All),
-			io:format("-> ~p ~n", [All_t]),
+			% io:format("-> ~p ~n", [All_t]),
 			All_t;
 		_ ->
 			[]

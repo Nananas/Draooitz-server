@@ -48,7 +48,7 @@ check_player_exists(Name) ->
 	get_player(Name).
 
 check_pass(Player, P) ->
-	io:format(">> PLAYER RECORS: ~p~n", [Player]),
+	% io:format(">> PLAYER RECORS: ~p~n", [Player]),
 	Pass = Player#player.pass,
 	if
 		Pass == P ->
@@ -78,8 +78,8 @@ broadcast_players_except_self(_Self, Msg) ->
 		fun
 			({Pid}) when is_pid(Pid)->
 				Pid ! Msg;
-			(P) ->
-				io:format("Other: ~p~n", P),
+			(_P) ->
+				% io:format("Other: ~p~n", P),
 				ok
 		end	, Pids),
 	ok.

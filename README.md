@@ -9,9 +9,10 @@ TODO
 
 - [ ] logger
 - [ ] logout
-- [ ] at startup, clean up process id's of players (dets)
-- [ ] Rooms list
-    - [ ] refresh / push update from server
-- [ ] create Room
-    - [ ] Floatingactionbutton (x2)
+- [ ] when last person leaves, quit the room after a certain time (& send message)
+- [?] at startup, clean up process id's of players (dets)
+- [x] Rooms list
+    - [x] refresh / push update from server
+- [x] create Room
+    - [x] Floatingactionbutton (x2)
     - [ ] back button in titlebar
