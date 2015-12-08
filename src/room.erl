@@ -2,15 +2,15 @@
 
 -export ([start/1]).
 -export ([loop/2]).
--export ([init/2]).
+-export ([init/1]).
 
 start(Name) ->
-	T = ets:new(table, [public, ordered_set]),
-	{ok, Pid} = server_sup:start_child(room, init, [T, Name]), 
+	{ok, Pid} = server_sup:start_child(room, init, [Name]), 
 	Pid.
 
-init(T, N) ->
+init(N) ->
 	io:format("Starting a room: ~p ~n", [N]),
+	T = ets:new(room_table, [public]),
 	Pid = spawn(?MODULE, loop, [T,N]),
 	{ok, Pid}.
 
@@ -18,20 +18,22 @@ init(T, N) ->
 loop(Table, Name) ->
 	receive
 		{add_player, PlayerId} ->
+			io:format("inserting playerid: ~p, in ~p~n", [PlayerId, Table]),
 			ets:insert(Table, {PlayerId}),
 			loop(Table, Name);
 
 		{remove_player, PlayerId} ->
+			io:format("removing playerid: ~p~n", [PlayerId]),
 			ets:delete(Table, PlayerId),
 			loop(Table, Name);
 
 		{notify_drawn_path, D, Me} ->
-			io:format("NOTIFY PATH~n"),
+			% io:format("NOTIFY PATH~n"),
 			ets:foldl(fun
 				({Pid}, _Acc)  ->
 					if
 						Pid /= Me ->
-							io:format("NICE"),
+							% io:format("NICE"),
 							Pid ! {push_drawn_path, D},
 							not_used;
 						true -> 
@@ -51,6 +53,7 @@ loop(Table, Name) ->
 			% end, All);
 
 		destroy ->
+			io:format("destorying table"),
 			ets:delete(Table),
 			ok
 	end.

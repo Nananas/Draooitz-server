@@ -31,24 +31,38 @@ loop(Args) ->
 		{leave_room} ->
 			#{room := OldRoom} = Args,
 			NewArgs = Args#{room := none},
-			Pid = OldRoom#room.pid,
-			Pid ! {remove_player, self()},
+			case OldRoom of
+				none ->
+					ok;
+				_ ->
+					Pid = OldRoom#room.pid,
+					Pid ! {remove_player, self()}
+			end,
 			loop(NewArgs);
 
 		{notify_drawn_path, D} ->
 			#{room := Room} = Args,
+			io:format("Room: ~p~n", [Room]),
 			RoomId = Room#room.pid,
 			RoomId ! {notify_drawn_path, D, self()},
 			loop(Args);
 
 		{push_drawn_path, D} ->
-			io:format("PUSH~n"),
+			% io:format("PUSH~n"),
 			#{socket := SocketPid} = Args,
 			SocketPid ! {push_drawn_path, D},
 			loop(Args);
 
 		destroy ->	
 			players:set_player_offline(self()),
+			#{room := Room} = Args,
+			case Room of 
+				none->
+					ok;
+				_ ->
+					Rid = Room#room.pid,
+					Rid ! {remove_player, self()}
+			end,
 			ok
 	end.
 

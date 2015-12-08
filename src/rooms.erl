@@ -26,6 +26,7 @@ remove_room(Room) ->
 	Name = Room#room.name,
 	ets:delete(t_rooms, Name),
 	Pid ! destroy.
+
 	
 %% PRIVATE
 enterable(Name) ->

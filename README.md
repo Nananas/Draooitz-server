@@ -9,7 +9,9 @@ TODO
 
 - [ ] logger
 - [ ] logout
-- [ ] when last person leaves, quit the room after a certain time (& send message)
+- [ ] Rooms
+    - [ ] push people count to clients
+    - [ ] when last person leaves, quit the room after a certain time (& send message)
 - [?] at startup, clean up process id's of players (dets)
 - [x] Rooms list
     - [x] refresh / push update from server
