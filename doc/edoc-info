@@ -1,0 +1,4 @@
+%% encoding: UTF-8
+{application,server}.
+{modules,[login,player,players,room,rooms,server,server_app,server_sup,
+          socket_handler]}.

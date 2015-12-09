@@ -1,3 +1,6 @@
+%% @author Thomas Dendale
+% @doc public functions for interaction with rooms and room processes.
+
 -module (rooms).
 
 -export ([start/0]).
@@ -11,45 +14,25 @@
 
 -include ("records.hrl").
 
+% TODO: check if a room is not used, and remove it.
+
+% @doc creates a new table, keeping track of existing rooms
 start() ->
 	ets:new(t_rooms, [named_table, public, ordered_set, {keypos, #room.name}]).
 
 
-%% PRIVATE
-add_room(Room) ->
-	ets:insert(t_rooms, Room).
-
-%% PRIVATE
-remove_room(Room) ->
-	% {Name, Pid, _} = Room,
-	Pid = Room#room.pid,
-	Name = Room#room.name,
-	ets:delete(t_rooms, Name),
-	Pid ! destroy.
-
-	
-%% PRIVATE
-enterable(Name) ->
-	case ets:lookup(t_rooms, Name) of
-		[_Object] ->
-			ok;		% TODO: if too many people... make unable to enter
-		[] ->
-			not_ok;
-		_ -> 
-			not_ok
-	end.
-
-
-% -----------
-%% PUBLIC
-% -----------
-
+% @doc Returns the existing room with the specified Name. Make sure the room exists!
+% @spec get_room(Name) -> #room{}
+% 		Name = bitstring()
 get_room(Name) ->
 	[R] = ets:lookup(t_rooms, Name),
 	R.
 
 
-
+% @doc Handles the incoming _create room_ message with a specified Name. 
+% 		This will create a new room process if it does not yet exist, and add it to the tracking table.
+% @spec handle_create(Name) -> {ok, #room{}} | not_ok
+% 		Name = bitstring()
 handle_create(Name) ->
 	case ets:lookup(t_rooms, Name) of
 		[_Object] ->
@@ -62,6 +45,9 @@ handle_create(Name) ->
 	end.
 
 
+% @doc Handles the incoming _get room list_ message. Currently only the "ALL" message is supported. 
+% @spec handle_getlist(Data) -> [#room{}]
+% 		Data = bitstring()
 handle_getlist(Data) ->
 	case Data of
 		<<"ALL">> ->
@@ -81,6 +67,9 @@ handle_getlist(Data) ->
 	end.
 
 
+% @doc Handles the incoming _enter room_ message. Return if a room is enterable, and if so, also returns the room object.
+% @spec handle_enter(Name) -> ok | not_ok
+%		Name = bitstring()
 handle_enter(Name) ->
 	case enterable(Name) of
 		ok ->
@@ -88,3 +77,31 @@ handle_enter(Name) ->
 		not_ok ->
 			not_ok
 	end.
+
+
+
+
+% @private
+add_room(Room) ->
+	ets:insert(t_rooms, Room).
+
+% @private
+remove_room(Room) ->
+	% {Name, Pid, _} = Room,
+	Pid = Room#room.pid,
+	Name = Room#room.name,
+	ets:delete(t_rooms, Name),
+	Pid ! destroy.
+
+% @private
+enterable(Name) ->
+	case ets:lookup(t_rooms, Name) of
+		[_Object] ->
+			ok;		% TODO: if too many people... make unable to enter
+		[] ->
+			not_ok;
+		_ -> 
+			not_ok
+	end.
+
+

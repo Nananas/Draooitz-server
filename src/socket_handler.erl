@@ -1,3 +1,5 @@
+%% @author Thomas Dendale
+%% @doc Cowboy websocket handler.
 -module(socket_handler).
 -behaviour(cowboy_websocket_handler).
 
@@ -9,10 +11,12 @@
 
 -include ("records.hrl").
 
+% upgrade any incoming connection to websocket (Might not be the best idea...)
 init(_, _, _) ->
 	io:format("-------------- INIT~n"),
 	{upgrade, protocol, cowboy_websocket}.
 
+% initialize websocket
 websocket_init(_, Req, _Opts) ->
 	Req2 = cowboy_req:compact(Req),
 	% io:format("> WS INIT~n"),
@@ -102,7 +106,11 @@ websocket_handle({text, Data}, Req, PlayerPid) when is_pid(PlayerPid) ->
 
 		%% TODO: parse to json
 		<<"DRAWPATH:", D/bitstring>> ->
-			PlayerPid ! {notify_drawn_path, D},
+			PlayerPid ! {notify, draw_path, D},
+			{reply, {text, tojson(ok)}, Req, PlayerPid};
+
+		<<"CLEARDRAWING">> ->
+			PlayerPid ! {notify, clear_drawing},
 			{reply, {text, tojson(ok)}, Req, PlayerPid};
 
 		_->
@@ -121,15 +129,16 @@ websocket_handle(_Frame, Req, State) ->
 
 
 websocket_info({push_update_room, Room}, Req, State) ->
-	% io:format("		For player ~p: push_update_room: ~p~n", [State, Room]),
 	Name = Room#room.name,
 	Msg = #{msg=><<"new_room">>, name=>Name},
 	{reply, {text, tojson(Msg)}, Req, State};
 
 websocket_info({push_drawn_path, Data}, Req, State) ->
-	% io:format("		For player ~p: push_drawn_path: ~p~n", [State, Data]),
-	% Msg = #{msg=><<"path">>, path=>Data},
 	Msg = <<"DRAWPATH:", Data/bitstring>>,
+	{reply, {text, Msg}, Req, State};
+
+websocket_info(clear_drawing, Req, State) ->
+	Msg = <<"CLEARDRAWING">>,
 	{reply, {text, Msg}, Req, State};
 
 websocket_info(_Info, Req, State) ->

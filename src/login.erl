@@ -1,8 +1,12 @@
+%% @author Thomas Dendale
+%% @doc Login handler. Starts a survivor with the tables from Rooms and Players
+
 -module (login).
 
 -export ([start_survivor/0]).
 -export([survivor/0]).
 -export ([handle_login/1]).
+
 
 start_survivor() ->
 	Pid = spawn(?MODULE, survivor, []),
@@ -10,6 +14,7 @@ start_survivor() ->
 	{ok, Pid}.
 
 
+% @private
 survivor()->
 	io:format("Starting survivor: players dets & rooms ets~n"),
 
@@ -24,7 +29,10 @@ survivor()->
 			ok
 	end.
 
-%% NAME,PASS
+
+% @doc 
+% @spec handle_login(bitstring()) -> {ok, Player} | not_ok
+% 		Player = #player{}
 handle_login(D) ->
 	{Comma_pos, _} = binary:match(D, [<<",">>]),
 	F = binary:part(D, {0, Comma_pos}),

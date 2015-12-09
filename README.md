@@ -9,12 +9,13 @@ TODO
 
 - [ ] logger
 - [ ] logout
-- [ ] Rooms
-    - [ ] push people count to clients
-    - [ ] when last person leaves, quit the room after a certain time (& send message)
 - [?] at startup, clean up process id's of players (dets)
 - [x] Rooms list
     - [x] refresh / push update from server
-- [x] create Room
+- [x] Room
     - [x] Floatingactionbutton (x2)
-    - [ ] back button in titlebar
+    - [x] back button in titlebar
+    - [ ] Room name in titlebar
+    - [ ] push people count to clients
+    - [ ] when last person leaves, quit the room after a certain time (& send message)
+- [.] docs
