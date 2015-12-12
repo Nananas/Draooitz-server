@@ -6,6 +6,7 @@
 -export ([start/0]).
 -export ([add_room/1]).
 -export ([remove_room/1]).
+-export ([remove_room/2]).
 -export ([enterable/1]).
 -export ([get_room/1]).
 -export ([handle_create/1]).
@@ -13,8 +14,6 @@
 -export ([handle_getlist/1]).
 
 -include ("records.hrl").
-
-% TODO: check if a room is not used, and remove it.
 
 % @doc creates a new table, keeping track of existing rooms
 start() ->
@@ -51,14 +50,12 @@ handle_create(Name) ->
 handle_getlist(Data) ->
 	case Data of
 		<<"ALL">> ->
-			All = ets:match(t_rooms, #room{name='$1', _='_'}),
-			% io:format("ALL: match: ~p~n", [All]),
+			All = ets:match(t_rooms, #room{name='$1', pid='$2', _='_'}),
 			All_t = lists:map(fun (A)  ->
-				% [{Name, _, _}] = A,
-				% #room{name=Name},
-				% Name = A#room.name,
-				[Name] = A,
-				#{name=>Name}		%% map = easier to convert to json
+				[Name, Pid] = A,
+				People = room:get_people_count(Pid),
+				% io:format("people count = ~p~n", [People]),
+				#{name=>Name, people=>People}		%% map = easier to convert to json
 			end, All),
 			% io:format("-> ~p ~n", [All_t]),
 			All_t;
@@ -80,16 +77,20 @@ handle_enter(Name) ->
 
 
 
-
 % @private
 add_room(Room) ->
 	ets:insert(t_rooms, Room).
 
 % @private
+% @spec remove_room (Room) -> ok.
+% 		Room = #room{}
 remove_room(Room) ->
 	% {Name, Pid, _} = Room,
 	Pid = Room#room.pid,
 	Name = Room#room.name,
+	remove_room(Pid, Name).
+
+remove_room(Pid, Name) ->
 	ets:delete(t_rooms, Name),
 	Pid ! destroy.
 

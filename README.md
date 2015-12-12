@@ -16,6 +16,7 @@ TODO
     - [x] Floatingactionbutton (x2)
     - [x] back button in titlebar
     - [ ] Room name in titlebar
-    - [ ] push people count to clients
-    - [ ] when last person leaves, quit the room after a certain time (& send message)
+    - [x] push people count to clients & show in app
+    - [x] when last person leaves, quit the room after a certain time (& send message)
 - [.] docs
+- [x] clear canvas on button press

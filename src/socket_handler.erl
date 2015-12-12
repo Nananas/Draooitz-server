@@ -78,14 +78,14 @@ websocket_handle({text, Data}, Req, PlayerPid) when is_pid(PlayerPid) ->
 
 		<<"GETROOMLIST:", D/bitstring>> ->
 			R = rooms:handle_getlist(D),
-			% io:format("GETROOMLIST: ~p ~n",  [R]),
-			{reply, {text, tojson(R)}, Req, PlayerPid};
+			JSON = tojson(#{rooms => R}),
+			{reply, {text, <<"LIST:", JSON/bitstring>>}, Req, PlayerPid};
 
-		<<"NEWROOM:", N/bitstring>> ->
+		<<"NEWROOM:", N/bitstring>> -> 				% N = room name
 			case rooms:handle_create(N) of
 				{ok, Room} ->
 					PlayerPid ! {join_room, Room},
-					players:notify(newroom, Room, PlayerPid),
+					players:notify(new_room, Room, PlayerPid),
 					{reply, {text, tojson(ok)}, Req, PlayerPid};
 				not_ok ->
 					{reply, {text, tojson(not_ok)}, Req, PlayerPid}
@@ -104,16 +104,16 @@ websocket_handle({text, Data}, Req, PlayerPid) when is_pid(PlayerPid) ->
 			PlayerPid ! {leave_room},
 			{reply, {text, tojson(ok)}, Req, PlayerPid};
 
-		%% TODO: parse to json
 		<<"DRAWPATH:", D/bitstring>> ->
 			PlayerPid ! {notify, draw_path, D},
 			{reply, {text, tojson(ok)}, Req, PlayerPid};
 
 		<<"CLEARDRAWING">> ->
-			PlayerPid ! {notify, clear_drawing},
+			PlayerPid ! {notify, clear_drawing},		% right now only a loopback to websocket_info
 			{reply, {text, tojson(ok)}, Req, PlayerPid};
 
-		_->
+		Other ->
+			io:format("~nGarbage message: ~p~n~n", [Other]),
 			{reply, {text, Data}, Req, PlayerPid}
 
 	end;
@@ -128,10 +128,18 @@ websocket_handle(_Frame, Req, State) ->
 
 
 
-websocket_info({push_update_room, Room}, Req, State) ->
+websocket_info({push_new_room, Room}, Req, State) ->
 	Name = Room#room.name,
-	Msg = #{msg=><<"new_room">>, name=>Name},
-	{reply, {text, tojson(Msg)}, Req, State};
+	Content = #{name=>Name},
+	Msg = #{msg=><<"new_room">>, content=>Content},
+	JSON = tojson(Msg),
+	{reply, {text, <<"PUSH:", JSON/bitstring>>}, Req, State};
+
+websocket_info({push_update_room, RoomName, PeopleCount}, Req, State) ->
+	Content = #{name=>RoomName, people=>PeopleCount},
+	Msg = #{msg=><<"update_room">>, content=>Content},
+	JSON = tojson(Msg),
+	{reply, {text, <<"PUSH:", JSON/bitstring>>}, Req, State};
 
 websocket_info({push_drawn_path, Data}, Req, State) ->
 	Msg = <<"DRAWPATH:", Data/bitstring>>,

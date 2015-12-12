@@ -9,6 +9,7 @@
 -export ([broadcast_players_except_self/2]).
 -export ([get_player/1]).
 -export ([notify/3]).
+-export ([notify/4]).
 -export ([set_player_online/1]).
 -export ([set_player_offline/1]).
 -export ([start_player/2]).
@@ -101,17 +102,30 @@ start_player(Name, SocketId) ->
 % @spec notify(newroom, Room, Self) -> ok
 % 		Room = bitstring()
 % 		Self = pid()
-notify(newroom, Room, Self) ->
-	broadcast_players_except_self(Self, {event_push_update_room, Room}).
+notify(new_room, Room, Self) ->
+	broadcast_players_except_self(Self, {event_push_new_room, Room}).
+
+% @doc Notifies every online player that a room with specified Room name has been updated.
+% @spec notify(newroom, RoomName, PlayerCount, Self) -> ok
+% 		RoomName = bitstring()
+% 		PlayerCount = int()
+% 		Self = pid()
+notify(update_room, RoomName, PlayerCount, Self) ->
+	broadcast_players_except_self(Self, {event_push_update_room, RoomName, PlayerCount}).
 
 % @private
-broadcast_players_except_self(_Self, Msg) ->
+broadcast_players_except_self(Self, Msg) ->
 	Pids = ets:tab2list(t_players_online),
 
 	lists:foreach(
 		fun
 			({Pid}) when is_pid(Pid)->
-				Pid ! Msg;
+				if
+					Pid /= Self ->
+						Pid ! Msg;
+					true ->
+						ok
+				end;
 			(_P) ->
 				% io:format("Other: ~p~n", P),
 				ok

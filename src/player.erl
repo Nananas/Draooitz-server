@@ -20,8 +20,6 @@ join_room(Pid, Room) ->
 leave_room(Pid, Room) ->
 	Pid ! {leave_room, Room}.
 
-
-
 % @private
 init(Name, SocketPid) ->
 	{ok, spawn(?MODULE, loop, [#{name=>Name, room=>none, socket=>SocketPid}])}.
@@ -29,17 +27,25 @@ init(Name, SocketPid) ->
 % @private
 loop(Args) ->
 	receive
-		{event_push_update_room, Room} ->
+		%
+		{event_push_new_room, Room} ->
 			#{socket := SocketPid} = Args,
-			SocketPid ! {push_update_room, Room},
+			SocketPid ! {push_new_room, Room},
 			loop(Args);
 
+		{event_push_update_room, Room, PlayerCount} ->
+			#{socket := SocketPid} = Args,
+			SocketPid ! {push_update_room, Room, PlayerCount},
+			loop(Args);
+
+		% joining room by updating variable, and sending a message the Roomid to add this player to its list
 		{join_room, Room} ->
 			NewArgs = Args#{room := Room},
-			Pid = Room#room.pid,
-			Pid ! {add_player, self()},
+			Rid = Room#room.pid,
+			Rid ! {add_player, self()},
 			loop(NewArgs);
 
+		% check if in a room, and send a message to that Roomid if true
 		{leave_room} ->
 			#{room := OldRoom} = Args,
 			NewArgs = Args#{room := none},
@@ -52,30 +58,36 @@ loop(Args) ->
 			end,
 			loop(NewArgs);
 
-		{notify, drawn_path, D} ->
+
+		% notify loopback for DRAWPATH message
+		{notify, draw_path, D} ->
 			#{room := Room} = Args,
 			RoomId = Room#room.pid,
-			RoomId ! {notify, drawn_path, D, self()},
+			RoomId ! {notify, draw_path, D, self()},
 			loop(Args);
 
+		{push_draw_path, D} ->
+			#{socket := SocketPid} = Args,
+			SocketPid ! {push_drawn_path, D},
+			loop(Args);
+
+		% notify loopback for CLEARDRAWING message
 		{notify, clear_drawing} ->
 			#{room := Room} = Args,
 			RoomId = Room#room.pid,
 			RoomId ! {notify, clear_drawing, self()},
 			loop(Args);
 
-
-		{push_drawn_path, D} ->
-			% io:format("PUSH~n"),
-			#{socket := SocketPid} = Args,
-			SocketPid ! {push_drawn_path, D},
-			loop(Args);
-
-		clear_drawing ->
+		{clear_drawing} ->
 			#{socket := SocketPid} = Args,
 			SocketPid ! clear_drawing,
 			loop(Args);
 
+		%
+		{update_player_count_of_room, RoomName, PlayerCount} ->
+			#{socket := SocketPid} = Args,
+			SocketPid ! {push_update_room, RoomName, PlayerCount},
+			loop(Args);
 
 		destroy ->	
 			players:set_player_offline(self()),
