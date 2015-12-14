@@ -50,6 +50,7 @@ websocket_handle({text, Data}, Req, not_logged_in) ->
 websocket_handle({text, Data}, Req, PlayerPid) when is_pid(PlayerPid) ->
 	case Data of
 		%% LOGIN as someone else
+		%% TODO: destroy previous player process
 		<<"LOGIN:", D/bitstring>> ->
 			PlayerPid ! destroy,
 			io:format("LOGIN: "),

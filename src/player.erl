@@ -100,5 +100,18 @@ loop(Args) ->
 					Rid ! {remove_player, self()}
 			end,
 			ok
+		% TODO: destroy inactive player, and terminate connection.
+		% after
+		% 	1000*60*60*3 ->		% inactive period of 3 hours
+		% 		#{room := Room} = Args,
+
+		% 		if 
+		% 			Room /= none ->
+		% 				Rid = Room#room.pid,
+		% 				Rid ! {remove_player, self()},
+		% 				players:set_player_offline(self()),
+		% 			true ->
+		% 				players:set_player_offline(self()),
+		% 		end
 	end.
 
