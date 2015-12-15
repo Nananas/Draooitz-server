@@ -26,4 +26,34 @@ The rooms table is somewhat similar to the players table. The rooms module mostl
 
 The rooms ets is registered and started from within the survivor process.
 
+# API
+The following sketches depicts the possible client-server and server-client messages.
 
+## client-server
+
+```
+State: [Not logged in]
+    - LOGIN:<username>,<password>
+        ok -> go to [Logged in]
+        not_ok -> go to [Not logged in]
+
+State: [Logged in]
+    - LOGIN:<username>,<password>
+        ok -> go to [Logged in]
+        not_ok -> go to [Not logged in]
+
+    - GETROOMLIST:ALL
+    - NEWROOM:<roomname>
+    - ENTERROOM:<roomname>
+    - LEAVEROOM
+    - DRAWPATH:<json path data>
+    - CLEARDRAWING
+```
+
+### Drawpath class
+The drawpath json message contains the following data:
+```
+Integer[] Xx;   // array of x-positions
+Integer[] Yy;   // array of y-positions
+int c;      // color
+```

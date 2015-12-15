@@ -66,16 +66,16 @@ websocket_handle({text, Data}, Req, PlayerPid) when is_pid(PlayerPid) ->
 					{reply, {text, tojson(#{state => <<"NOT_LOGGED_IN">>})}, Req, not_logged_in}
 			end;
 
-		<<"CREATE:", N/bitstring>> ->
-			Msg = case rooms:handle_create(N) of
-				not_ok ->
-					not_ok;
-				{ok, R} ->
-					player:join_room(PlayerPid, R),
-					ok
-			end,
+		% <<"CREATE:", N/bitstring>> ->
+		% 	Msg = case rooms:handle_create(N) of
+		% 		not_ok ->
+		% 			not_ok;
+		% 		{ok, R} ->
+		% 			player:join_room(PlayerPid, R),
+		% 			ok
+		% 	end,
 
-			{reply, {text, tojson(Msg)}, Req, PlayerPid};
+		% 	{reply, {text, tojson(Msg)}, Req, PlayerPid};
 
 		<<"GETROOMLIST:", D/bitstring>> ->
 			R = rooms:handle_getlist(D),
