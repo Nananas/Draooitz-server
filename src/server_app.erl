@@ -10,7 +10,7 @@ start(_Type, _Args) ->
 			   % {"/socket", socket_handler, []}
 		]}
 	]),
-	{ok, _} = cowboy:start_http(http_listener, 100, [{port, 8080}], [{env, [{dispatch, Dispatch}]}] ),
+	{ok, _} = cowboy:start_http(http_listener, 100, [{port, 8090}], [{env, [{dispatch, Dispatch}]}] ),
 	io:format("----------------------~nSTARTED SERVER AT 8080~n--------------------~n"),
 	server_sup:start_link().
 

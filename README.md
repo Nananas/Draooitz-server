@@ -1,6 +1,18 @@
 # Draooitz Server
 This repo contains the code for the server for an android game, written in erlang. It is build on top of the Cowboy server framework, and uses websockets for full-duplex communication. 
 
+
+## Run server
+The server uses port number `8090`. Run:
+```
+ $ make
+ $ _rel/server_release/bin/server_release console
+or 
+ $ make
+ $ _rel/server_release/bin/server_release start
+ $ _rel/server_release/bin/server_release attach
+```
+
 ## Socket handler
 The socket handler is the starting point of the application. This is where the websocket connections are created. Each websocket is handled by a separate process. A player process is created if a correct combination of username and password is provided. This process id is then stored in the state of the websocket process. This variable is accessible by each subsequent call to and from the WS.
 
@@ -57,3 +69,4 @@ Integer[] Xx;   // array of x-positions
 Integer[] Yy;   // array of y-positions
 int c;      // color
 ```
+

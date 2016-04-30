@@ -39,7 +39,6 @@ loop(Players, Name) ->
 			loop(Players, Name);
 
 		{notify, clear_drawing, Me} ->
-			io:format("clear???"),
 			notify_other_players(Players, {clear_drawing}, Me),
 			loop(Players, Name);
 
